@@ -10,14 +10,27 @@
         <link rel="stylesheet" type="text/css" href="{{stylesheet}}" />
         {%- if custom_header %}{{ custom_header }}{% endif %}
     <style>
-        body, html {
+        body {
+            padding: 1mm;
+            margin: 0;
+        }
+
+        .pycard {
+            display: inline-block;
+            position: relative;
             margin: 0;
             padding: 0;
         }
 
-        .pycard {
-            float: left;
-            position: relative;
+        .__icon {
+            height: 1em; /* Size relative to text */
+            vertical-align: middle;
+        }
+
+        del.__icon {
+            background-color: #ff8888;
+            border: 1px solid #ff0000;
+            color: #880000;
         }
 
         @media print {

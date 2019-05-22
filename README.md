@@ -58,6 +58,8 @@ Note: You can change the prefix with the `-x` or `--prefix` commandline option. 
         * `header`: a path to an optional header that gets inserted in the `<head>` of the deck template.
         Defaults to the same as the yaml, but with an `html.header` extension
         * `output`: the path to output the deck to. Defaults to the same as the yaml, but with an `html` extension
+        * `markdown`: allows customizing markdown
+            * `default_mode`: (`paragraph`, `inline`, or `auto`. Default `auto`) specifies whether the regular `markdown` filter strips out p tags or not
     * `defaults` allows you to set some defaults for each card
     * `cards` - **[Required]** A yaml list of each card and its attributes. Each field is passed to the jinja2 template and is
     pulled from your defaults section if missing. Some additional fields:
@@ -68,9 +70,12 @@ Note: You can change the prefix with the `-x` or `--prefix` commandline option. 
         * `copies`: indicates how many copies of that card will be rendered. Set to 0 to exclude the card from rendering.
         Defaults to 1 unless otherwise specified in the `defaults` section
 
-The page found at localhost:8800 is now printable!
+Jinja2 card templates now support markdown as a filter:
 
-![image](https://user-images.githubusercontent.com/903488/31474239-521061be-aeae-11e7-81ac-626490faacee.png)
+* `md_paragraph`: Resulting text is wrapped in `<p>` tags
+* `md_inline`: Resulting text is not wrapped in `<p>` tags (good for inline values)
+* `md_auto`: Resulting text is wrapped in `<p>` tags only if the input string includes newlines
+* `markdown` is an alias for `md_auto` by default.
 
 ### Credits
 
