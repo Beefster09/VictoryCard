@@ -17,54 +17,93 @@ from markdown.util import etree
 log = logging.getLogger('pycard')
 
 
-VERSION = '0.3.0'
+VERSION = '0.3.1'
 
 FULL_DECK_TEMPLATE = os.path.join(os.path.dirname(__file__), 'cards.html.jinja2')
 
+
+def find_icon(name, parent_dir='.', root='.'):
+    if os.path.splitext(name)[1]:
+        # Extension given explicitly; assume it exists
+        return '/' + os.path.relpath(os.path.join(root, parent_dir, name), root).replace('\\', '/')
+    else:
+        # Try to find a working image with that base name
+        for ext in ['.svg', '.webp', '.png', '.gif', '.bmp', '.jpeg', '.jpg']:
+            candidate = os.path.join(root, parent_dir, name + ext)
+            if os.path.isfile(candidate):
+                return '/' + os.path.relpath(candidate, root).replace('\\', '/')
+        else:
+            return None
+
+
 class IconInsertionProcessor(InlineProcessor):
-    def __init__(self, pattern, icon_root='.', fs_root='.'):
+    def __init__(self, pattern, sub_missing=True, *, icon_root='.', fs_root='.', **kwargs):
         self.icon_root = icon_root
         self.fs_root = fs_root
-        super().__init__(pattern)
+        self.sub_missing = sub_missing
+        super().__init__(pattern, **kwargs)
 
     def handleMatch(self, m, data):
         icon_name = m.group(1)
-        if '.' not in icon_name:
-            for ext in ['.svg', '.webp', '.png', '.gif', '.bmp', '.jpeg', '.jpg']:
-                candidate = os.path.join(self.icon_root, icon_name + ext)
-                if os.path.isfile(os.path.join(self.fs_root, candidate)):
-                    icon_path = candidate
-                    break
-            else:
-                log.warning(f"No icons found for {icon_name!r}")
-                el = etree.Element('del')
-                el.attrib['class'] = '__icon'
-                el.text = icon_name
-                return el, m.start(0), m.end(0)  # no substitution
-        else:
-            icon_path = os.path.join(self.icon_root, icon_name)
+        icon_path = find_icon(icon_name)
+        if not icon_path:
+            if not self.sub_missing:
+                return None, None, None # no substitution
+            log.warning(f"No icons found for {icon_name!r}. Using placeholder")
+            el = etree.Element('del')
+            el.attrib['class'] = '__icon'
+            el.text = icon_name
+            return el, m.start(0), m.end(0)
         el = etree.Element('img')
         el.attrib['src'] = icon_path
         el.attrib['class'] = '__icon'
         return el, m.start(0), m.end(0)
 
 
-class IconInsertion(Extension):
-    def __init__(self, icon_root='.', fs_root='.', **kwargs):
+class SpanInsertionProcessor(InlineProcessor):
+    def handleMatch(self, m, data):
+        id = m.group('id')
+        classes = m.group('classes')
+        el = etree.Element('span')
+        if id:
+            el.attrib['id'] = id
+        el.attrib['class'] = classes.replace('.', ' ').strip()
+        el.text = m.group('text')
+        return el, m.start(0), m.end(0)
+
+
+class PyCardExtension(Extension):
+    def __init__(self, **kwargs):
         self.config = {
             "icon_root"  : ['.', "The root to use for the icon, relative to the cards.yaml"],
             "fs_root"  : ['.', "The filesystem root of the deck data"],
         }
-        self.icon_root = icon_root
-        self.fs_root = fs_root
-
         super().__init__(**kwargs)
 
     def extendMarkdown(self, md):
-        md.inlinePatterns.add(
-            'inline_icon',
-            IconInsertionProcessor(r'\[(?:icon|i):([-_A-Za-z0-9]+)\]', self.icon_root, self.fs_root),
-            '<link'
+        md.inlinePatterns.register(  # [icon:asdf] style icons (also accepts [i:asdf])
+            IconInsertionProcessor(
+                r'\[(?:icon|i):([-\w]+)\]',
+                **self.getConfigs()
+            ),
+            'bracket_icon',
+            35
+        )
+        md.inlinePatterns.register(  # &entity; style icons
+            IconInsertionProcessor(
+                r'&([-\w]+);',
+                False,
+                **self.getConfigs()
+            ),
+            'entity_icon',
+            100
+        )
+        md.inlinePatterns.register(  # {#id.class1.class2}
+            SpanInsertionProcessor(
+                r'{(?:#(?P<id>[-\w]+))?(?P<classes>(\.[-\w]+)*)}\[(?P<text>[^\[\]]*)\]'
+            ),
+            'span_insertion',
+            100
         )
 
 
@@ -73,7 +112,7 @@ P_TAG = re.compile(r'</?p>')
 
 def render_from_yaml(yaml_path):
     base, ext = os.path.splitext(os.path.basename(yaml_path))
-    source_dir = os.path.dirname(yaml_path)
+    source_dir = os.path.abspath(os.path.dirname(yaml_path))
     now = datetime.now()
 
     jinja_loader = jinja2.FileSystemLoader(source_dir)
@@ -91,18 +130,19 @@ def render_from_yaml(yaml_path):
         'markdown': {},
         **deck_info.get('general', {})
     }
+
+    jinja_env.filters['icon'] = functools.partial(find_icon, parent_dir=general['icon_path'], root=source_dir)
+
     # Configure markdown
-    md_extensions = [
-        IconInsertion(general['icon_path'], source_dir) if ext == 'icon' else ext
-        for ext in general['markdown'].get('extensions', ['smarty', 'icon'])
-    ]
-    md_ext_conf = {
-        'card_icon': {
-            'icon_root': general['icon_path'],
-            'fs_root': source_dir
-        },
-        **general['markdown'].get('extension_configs', {})
-    }
+    md_extensions = general['markdown'].get('extensions', ['smarty'])
+    md_ext_conf = general['markdown'].get('extension_configs', {})
+    md_extensions.append(
+        PyCardExtension(
+            icon_root=general['icon_path'],
+            fs_root=source_dir,
+            **md_ext_conf.get('pycard', {})
+        )
+    )
 
     jinja_env.filters['md_paragraph'] = md_paragraph = functools.partial(
         markdown.markdown,
@@ -163,12 +203,14 @@ def render_from_yaml(yaml_path):
     with open(general['template']) as tf:
         global_template = jinja2.Template(tf.read())
 
-    with open(os.path.join(source_dir, general['output']), "w") as of:
+    abs_output_path = os.path.join(source_dir, general['output'])
+    with open(abs_output_path, "w") as of:
         of.write(
             global_template.render(
                 rendered_cards=rendered_cards,
                 stylesheet=general['stylesheet'],
-                custom_header=custom_header
+                custom_header=custom_header,
+                absolute_to_relative=os.path.relpath(os.path.dirname(abs_output_path)),
             )
         )
     return source_dir, general['output']

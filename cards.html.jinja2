@@ -41,10 +41,19 @@
     </style>
     </head>
     <body>
-        {%-  for card in rendered_cards %}
+        {%- for card in rendered_cards %}
         <div class="pycard">
             {{ card }}
         </div>
         {%- endfor %}
+        <script> // make icon paths work consistently whether using http: or file:
+            if (window.location.protocol == 'file:') {
+                for (let img of document.getElementsByTagName('img')) {
+                    if (img.attributes.src.value.startsWith('/')) {
+                        img.src = '{{absolute_to_relative}}' + img.attributes.src.value
+                    }
+                }
+            }
+        </script>
     </body>
 </html>
