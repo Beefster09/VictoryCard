@@ -46,12 +46,34 @@
             {{ card }}
         </div>
         {%- endfor %}
-        <script> // make icon paths work consistently whether using http: or file:
+        <script>
+            // Make icon paths work consistently whether using http: or file:
             if (window.location.protocol == 'file:') {
                 for (let img of document.getElementsByTagName('img')) {
                     if (img.attributes.src.value.startsWith('/')) {
                         img.src = '{{absolute_to_relative}}' + img.attributes.src.value
                     }
+                }
+            }
+
+            // Automatically size .autosize text to fit its container
+            for (let element of document.getElementsByClassName('autosize')) {
+                let box = element.getBoundingClientRect()
+                let parent = element.parentElement
+                let parentBox = parent.getBoundingClientRect()
+                let parentStyle = window.getComputedStyle(parent)
+                let parentWidth = (
+                    parentBox.width
+                    - parseFloat(parentStyle.getPropertyValue('padding-left'))
+                    - parseFloat(parentStyle.getPropertyValue('padding-right'))
+                )
+                if (box.width > parentWidth) {
+                    let style = window.getComputedStyle(element)
+                    let fontSizeRaw = style.getPropertyValue('font-size')
+                    let fontSize = parseFloat(fontSizeRaw)
+                    let fontUnit = fontSizeRaw.replace(/[^a-z]/g, '')
+                    let targetSize = `${fontSize * parentWidth / box.width}${fontUnit}`
+                    element.style.fontSize = targetSize
                 }
             }
         </script>

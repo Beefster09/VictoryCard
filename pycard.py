@@ -17,9 +17,9 @@ from markdown.util import etree
 log = logging.getLogger('pycard')
 
 
-VERSION = '0.3.2'
+VERSION = '0.3.3'
 
-FULL_DECK_TEMPLATE = os.path.join(os.path.dirname(__file__), 'cards.html.jinja2')
+FULL_DECK_TEMPLATE = os.path.join(os.path.dirname(__file__), 'deck_template.html.jinja2')
 
 
 def find_icon(name, parent_dir='.', root='.'):
@@ -109,7 +109,7 @@ class PyCardExtension(Extension):
             35
         )
         md.inlinePatterns.register(
-            SimpleTagInlineProcessor(r'(~~)(\w|\w.*\w)~~', 'del'),
+            SimpleTagInlineProcessor(r'(~~)(\S|\S.*\S)\1', 'del'),
             'dtilde_del',
             5
         )
@@ -130,7 +130,7 @@ def render_from_yaml(yaml_path):
         deck_info = yaml.safe_load(yf)
 
     general = {
-        'template': FULL_DECK_TEMPLATE,
+        'deck_template': FULL_DECK_TEMPLATE,
         'stylesheet': base + '.css',
         'header': base + '.html.header',
         'output': base + '.html',
@@ -208,7 +208,7 @@ def render_from_yaml(yaml_path):
     else:
         custom_header = None
 
-    with open(general['template']) as tf:
+    with open(general['deck_template']) as tf:
         global_template = jinja2.Template(tf.read())
 
     abs_output_path = os.path.join(source_dir, general['output'])
@@ -279,7 +279,12 @@ def main():
             lambda: render_from_yaml(args.path),
             ignore=lambda path: path.endswith('.html')
         )
-        server.serve(root=source, port=args.port, host=args.host)
+        server.serve(
+            root=source,
+            port=args.port,
+            host=args.host,
+            live_css=False,  # Live CSS causes some issues with syncing the html reloads
+        )
 
 
 if __name__ == "__main__":
