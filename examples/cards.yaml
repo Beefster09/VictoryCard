@@ -7,7 +7,8 @@ cards:
     move: 1
     name: Alien
     copies: 3
-    text: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+    text: |
+      Lorem ipsum dolor sit amet, *consectetur* adipiscing elit
   - attack: 2
     avatar: barbarian.png
     defense: 7
@@ -16,7 +17,7 @@ cards:
     move: 2
     name: Barbarian
     copies: 1
-    text: sed do eiusmod tempor incididunt ut labore et dolore magna
+    text: sed do eiusmod tempor **incididunt** ut labore et dolore magna
   - attack: 8
     avatar: blindfold.png
     defense: 9
@@ -24,7 +25,7 @@ cards:
     insanity: 1
     move: 4
     name: Blind Man
-    copies: this_is_invalid_card_num_but_still_works
+    copies: Invalid (assumes 1)
     text: aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
       nisi ut aliquip ex
   - attack: 6
@@ -35,7 +36,10 @@ cards:
     move: 2
     name: Pythia
     copies: null
-    text: ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
+    text: |
+      ea commodo consequat.
+
+      Duis aute irure dolor in reprehenderit in voluptate
       velit esse cillum dolore eu fugiat nulla pariatur. Excepteur
   - attack: 3
     avatar: dead-head.png
@@ -44,7 +48,7 @@ cards:
     insanity: 6
     move: 1
     name: Dead Man
-    text: sint occaecat cupidatat
+    text: sint occaecat cupidatat [i:icon-skull]
   - attack: 5
     avatar: dwarf-face.png
     defense: 5
@@ -52,7 +56,7 @@ cards:
     insanity: 9
     move: 3
     name: Viking
-    text: proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+    text: proident, sunt in culpa qui officia ~~deserunt~~ mollit anim id est laborum
   - attack: 7
     avatar: gluttony.png
     defense: 3
@@ -163,8 +167,9 @@ cards:
     insanity: 3
     move: 3
     name: Wolf
-    text: Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium
-      , totam explicabo. Nemo enim ipsam voluptatem voluptas sit
+    text: |
+      Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium,
+      totam explicabo. Nemo enim ipsam voluptatem voluptas sit
   - attack: 5
     avatar: woman-elf-face.png
     defense: 2
@@ -173,4 +178,4 @@ cards:
     move: 2
     name: Elf
     copies: 0
-    text: sint occaecat cupidatat
+    text: sint occaecat cupidatat [i:bad-icon] &badicon; &icon-heart;

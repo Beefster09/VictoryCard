@@ -1,26 +1,26 @@
 <div class="card">
-    <!-- YOUR CUSTOM CODE STARTS HERE -->
-
-    <img class="avatar" src="{{avatar}}" />
-    <div class="name">{{name}}</div>
-    <div class="carac">
-        <div class="iconcell">
-            <img class="icon" src="icon-shield.png"> {{defense}}
-        </div>
-        <div class="iconcell">
-            <img class="icon" src="icon-swords.png"> {{attack}}
-        </div>
-        <div class="iconcell">
-            <img class="icon" src="icon-heart.png"> {{health}}
-        </div>
-        <div class="iconcell">
-            <img class="icon" src="icon-skull.png"> {{insanity}}
-        </div>
-        <div class="iconcell">
-            <img class="icon" src="icon-move.png"> {{move}}
+    <div class="header">
+        <img class="avatar" src="{{ avatar|icon }}" />
+        <span class="name">{{name}}</span>
+    </div>
+    <div class="info">
+        <div class="text">{{ text|md_paragraph }}</div>
+        <div class="stats">
+            <div class="iconcell">
+                <img class="icon" src="icon-shield.png"> {{defense}}
+            </div>
+            <div class="iconcell">
+                <img class="icon" src="icon-swords.png"> {{attack}}
+            </div>
+            <div class="iconcell">
+                <img class="icon" src="icon-heart.png"> {{health}}
+            </div>
+            <div class="iconcell">
+                <img class="icon" src="icon-skull.png"> {{insanity}}
+            </div>
+            <div class="iconcell">
+                <img class="icon" src="icon-move.png"> {{move}}
+            </div>
         </div>
     </div>
-    <div class="text">{{text}}</div>
-
-    <!-- YOUR CUSTOM CODE ENDS HERE -->
 </div>

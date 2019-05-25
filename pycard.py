@@ -11,29 +11,32 @@ import livereload
 import markdown
 import yaml
 from markdown.extensions import Extension
-from markdown.inlinepatterns import InlineProcessor
+from markdown.inlinepatterns import InlineProcessor, SimpleTagInlineProcessor
 from markdown.util import etree
 
 log = logging.getLogger('pycard')
 
 
-VERSION = '0.3.1'
+VERSION = '0.3.2'
 
 FULL_DECK_TEMPLATE = os.path.join(os.path.dirname(__file__), 'cards.html.jinja2')
 
 
 def find_icon(name, parent_dir='.', root='.'):
-    if os.path.splitext(name)[1]:
-        # Extension given explicitly; assume it exists
-        return '/' + os.path.relpath(os.path.join(root, parent_dir, name), root).replace('\\', '/')
-    else:
-        # Try to find a working image with that base name
-        for ext in ['.svg', '.webp', '.png', '.gif', '.bmp', '.jpeg', '.jpg']:
-            candidate = os.path.join(root, parent_dir, name + ext)
-            if os.path.isfile(candidate):
-                return '/' + os.path.relpath(candidate, root).replace('\\', '/')
+    try:
+        if os.path.splitext(name)[1]:
+            # Extension given explicitly; assume it exists
+            return '/' + os.path.relpath(os.path.join(root, parent_dir, name), root).replace('\\', '/')
         else:
-            return None
+            # Try to find a working image with that base name
+            for ext in ['.svg', '.webp', '.png', '.gif', '.bmp', '.jpeg', '.jpg']:
+                candidate = os.path.join(root, parent_dir, name + ext)
+                if os.path.isfile(candidate):
+                    return '/' + os.path.relpath(candidate, root).replace('\\', '/')
+            else:
+                return None
+    except TypeError as e:
+        log.warning(f"Icon Finder: {e}")
 
 
 class IconInsertionProcessor(InlineProcessor):
@@ -45,12 +48,12 @@ class IconInsertionProcessor(InlineProcessor):
 
     def handleMatch(self, m, data):
         icon_name = m.group(1)
-        icon_path = find_icon(icon_name)
+        icon_path = find_icon(icon_name, self.icon_root, self.fs_root)
         if not icon_path:
             if not self.sub_missing:
                 return None, None, None # no substitution
             log.warning(f"No icons found for {icon_name!r}. Using placeholder")
-            el = etree.Element('del')
+            el = etree.Element('s')
             el.attrib['class'] = '__icon'
             el.text = icon_name
             return el, m.start(0), m.end(0)
@@ -96,14 +99,19 @@ class PyCardExtension(Extension):
                 **self.getConfigs()
             ),
             'entity_icon',
-            100
+            5
         )
-        md.inlinePatterns.register(  # {#id.class1.class2}
+        md.inlinePatterns.register(  # {#id.class1.class2}[span text]
             SpanInsertionProcessor(
                 r'{(?:#(?P<id>[-\w]+))?(?P<classes>(\.[-\w]+)*)}\[(?P<text>[^\[\]]*)\]'
             ),
             'span_insertion',
-            100
+            35
+        )
+        md.inlinePatterns.register(
+            SimpleTagInlineProcessor(r'(~~)(\w|\w.*\w)~~', 'del'),
+            'dtilde_del',
+            5
         )
 
 
