@@ -17,7 +17,7 @@ from markdown.util import etree
 log = logging.getLogger('pycard')
 
 
-VERSION = '0.3.3'
+VERSION = '0.3.4'
 
 FULL_DECK_TEMPLATE = os.path.join(os.path.dirname(__file__), 'deck_template.html.jinja2')
 
@@ -99,7 +99,7 @@ class PyCardExtension(Extension):
                 **self.getConfigs()
             ),
             'entity_icon',
-            5
+            100
         )
         md.inlinePatterns.register(  # {#id.class1.class2}[span text]
             SpanInsertionProcessor(
@@ -118,13 +118,10 @@ class PyCardExtension(Extension):
 P_TAG = re.compile(r'</?p>')
 
 
-def render_from_yaml(yaml_path):
+def render_from_yaml(yaml_path, force=False):
     base, ext = os.path.splitext(os.path.basename(yaml_path))
     source_dir = os.path.abspath(os.path.dirname(yaml_path))
     now = datetime.now()
-
-    jinja_loader = jinja2.FileSystemLoader(source_dir)
-    jinja_env = jinja2.Environment(loader=jinja_loader)
 
     with open(yaml_path) as yf:
         deck_info = yaml.safe_load(yf)
@@ -136,10 +133,20 @@ def render_from_yaml(yaml_path):
         'output': base + '.html',
         'icon_path': '.',
         'markdown': {},
+        'card_spacing': '2pt',
         **deck_info.get('general', {})
     }
 
-    jinja_env.filters['icon'] = functools.partial(find_icon, parent_dir=general['icon_path'], root=source_dir)
+    defaults = {
+        'template': base + '.html.jinja2',
+        'copies': 1,
+        **deck_info.get('default', {})
+    }
+
+    header_path = os.path.join(source_dir, general['header'])
+    abs_output_path = os.path.join(source_dir, general['output'])
+
+    # TODO: Dependency graph so that a rebuild only occurs if templates or yamls are changed (unless force is set)
 
     # Configure markdown
     md_extensions = general['markdown'].get('extensions', ['smarty'])
@@ -152,6 +159,12 @@ def render_from_yaml(yaml_path):
         )
     )
 
+    # Configure Jinja2
+    jinja_loader = jinja2.FileSystemLoader(source_dir)
+    jinja_env = jinja2.Environment(loader=jinja_loader)
+
+    jinja_env.filters['icon'] = functools.partial(find_icon, parent_dir=general['icon_path'], root=source_dir)
+
     jinja_env.filters['md_paragraph'] = md_paragraph = functools.partial(
         markdown.markdown,
         extensions=md_extensions,
@@ -160,13 +173,6 @@ def render_from_yaml(yaml_path):
     jinja_env.filters['md_inline'] = md_inline = lambda text: P_TAG.sub('', md_paragraph(text))
     jinja_env.filters['md_auto'] = lambda text: md_paragraph(text) if '\n' in text else md_inline(text)
     jinja_env.filters['markdown'] = jinja_env.filters[f"md_{general['markdown'].get('default_mode', 'auto')}"]
-
-
-    defaults = {
-        'template': base + '.html.jinja2',
-        'copies': 1,
-        **deck_info.get('default', {})
-    }
 
     template_cache = {}
     def get_template(name):
@@ -201,7 +207,6 @@ def render_from_yaml(yaml_path):
 
     log.info("%d total cards", len(rendered_cards))
 
-    header_path = os.path.join(source_dir, general['header'])
     if os.path.exists(header_path):
         with open(header_path) as f:
             custom_header = f.read()
@@ -211,7 +216,6 @@ def render_from_yaml(yaml_path):
     with open(general['deck_template']) as tf:
         global_template = jinja2.Template(tf.read())
 
-    abs_output_path = os.path.join(source_dir, general['output'])
     with open(abs_output_path, "w") as of:
         of.write(
             global_template.render(
@@ -219,21 +223,23 @@ def render_from_yaml(yaml_path):
                 stylesheet=general['stylesheet'],
                 custom_header=custom_header,
                 absolute_to_relative=os.path.relpath(os.path.dirname(abs_output_path)),
+                card_spacing=general['card_spacing']
             )
         )
-    return source_dir, general['output']
+    return abs_output_path
 
 
-def parse_args():
+def main():
     parser = argparse.ArgumentParser(
         description="HTML + CSS card template renderer"
     )
 
     parser.add_argument(
-        'path',
+        'definitions',
         type=os.path.abspath,
+        nargs='+',
         metavar='PATH',
-        help="path to assets"
+        help="Path(s) to yaml files defining each deck."
     )
 
     parser.add_argument(
@@ -258,29 +264,38 @@ def parse_args():
         help="Do not start up a server that watches the directory"
     )
 
-    return parser.parse_args()
+    args = parser.parse_args()
 
-
-def main():
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
-    args = parse_args()
+    source_dir = os.path.dirname(args.definitions[0])
 
-    source, output = render_from_yaml(args.path)
+    if not all(os.path.dirname(path) == source_dir for path in args.definitions):
+        # Restrict files to being in the same directory so that the server can have a common root
+        parser.error("All yaml files must be in the same directory.")
+
+    def render_all(force=False):
+        outputs = []
+        for path in args.definitions:
+            output = render_from_yaml(path, force=force)
+            outputs.append(os.path.relpath(output, source_dir))
+        return outputs
+
+    outputs = render_all(True)
 
     if args.run_server:
         server = livereload.Server()
         server.watch(
-            f'{source}/*',
-            lambda: render_from_yaml(args.path),
+            f'{source_dir}/*',
+            render_all,
             ignore=lambda path: path.endswith('.html')
         )
         server.serve(
-            root=source,
+            root=source_dir,
             port=args.port,
             host=args.host,
             live_css=False,  # Live CSS causes some issues with syncing the html reloads

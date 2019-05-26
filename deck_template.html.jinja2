@@ -13,18 +13,22 @@
         body {
             padding: 1mm;
             margin: 0;
+            font-size: 0; /* This eliminates the space for inline-block elements (the cards) */
         }
 
         .pycard {
             display: inline-block;
             position: relative;
-            margin: 0;
+            margin-right: {{ card_spacing }};
+            margin-bottom: {{ card_spacing }};
             padding: 0;
+            font-size: default; /* Sets default card text to a visible size */
         }
 
         .__icon {
             height: 1em; /* Size relative to text */
-            vertical-align: middle;
+            position: relative;
+            top: 0.125em;
         }
 
         s.__icon {
