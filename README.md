@@ -1,4 +1,4 @@
-# PyCard
+# VictoryCard
 Flexible card game prototyping engine
 
 Generate printable cards for prototyping using yaml, html, css.
@@ -12,16 +12,16 @@ _Only tested in Python 3.7_
 ##  Quick Start
 
 ```
-git clone https://github.com/Beefster09/pycard.git
-cd pycard
+git clone https://github.com/Beefster09/VictoryCard.git
+cd VictoryCard
 pip install -r requirements.txt
-python pycard.py examples/cards.yaml
+python victorycard.py examples/cards.yaml
 ```
 
 Example output
 
 ```
-$ python pycard.py examples/cards.yaml
+$ python victorycard.py examples/cards.yaml
 2019-05-24 20:34:46 - Invalid value for 'copies': invalid literal for int() with base 10: 'Invalid (assumes 1)'
 2019-05-24 20:34:46 - No icons found for 'bad-icon'. Using placeholder
 2019-05-24 20:34:46 - 22 total cards
@@ -39,13 +39,13 @@ $ python pycard.py examples/cards.yaml
 
 Navigate to `localhost:8800` to see your cards. This page will automatically refresh anytime changes are made.
 
-You can also run `python pycard.py --help` for a list of options.
+You can also run `python victorycard.py --help` for a list of options.
 
 ## Explanation
 
 ### YAML deck data file
 
-PyCard uses YAML to define card data. The top level contains 3 sections:
+VictoryCard uses YAML to define card data. The top level contains 3 sections:
 
 * `general` for general settings about the cards themselves
     * `deck_template`: a path to the deck template if you would like to override the default
@@ -64,13 +64,13 @@ pulled from your defaults section if missing. Some additional fields:
     * `template`: the card template to use for this specific card. Typically you will only want to set this in the `defaults` section.
     By default, the default template is the same as the yaml, but with a `html.jinja2` extension.
     Also note that this template *must* have an `html.jinja2` extension, as it will be added to the field if not present.
-    See [Jinja Documentation](http://jinja.pocoo.org/docs/2.9/templates/) for details on how to create templates for each card.
+    See [Jinja Documentation](http://jinja.pocoo.org/docs/latest/templates/) for details on how to create templates for each card.
     * `copies`: indicates how many copies of that card will be rendered. Set to 0 to exclude the card from rendering.
     Defaults to 1 unless otherwise specified in the `defaults` section
 
 ### Jinja2 Extensions
 
-PyCard adds a few extensions to Jinja2:
+VictoryCard adds a few extensions to Jinja2:
 
 * Markdown filter. This enables data from your yaml file to be processed by markdown first. There are a few variants:
     * `md_paragraph`: Resulting text is wrapped in `<p>` tags.
@@ -83,7 +83,7 @@ PyCard adds a few extensions to Jinja2:
 
 ### Markdown Exensions
 
-PyCard adds a few extensions to Markdown:
+VictoryCard adds a few extensions to Markdown:
 
 * Inline icons, either with a `[icon:whatever]` or `&whatever;` syntax. The latter will not be replaced by placeholder text.
 * `~~` strikethrough
@@ -91,6 +91,4 @@ PyCard adds a few extensions to Markdown:
 
 ## Credits
 
-Inspired by https://github.com/vaemendis/hccd
-
-Forked from https://github.com/ghostsquad/pycard (I have no intention of making a pull request)
+Originally Forked from [ghostsquad/pycard](https://github.com/ghostsquad/pycard), which was inspired by [HCCD](https://github.com/vaemendis/hccd)

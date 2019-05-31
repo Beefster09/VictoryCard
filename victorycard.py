@@ -14,13 +14,11 @@ from markdown.extensions import Extension
 from markdown.inlinepatterns import InlineProcessor, SimpleTagInlineProcessor
 from markdown.util import etree
 
-log = logging.getLogger('pycard')
+from core.deck import Deck
 
+log = logging.getLogger('victorycard')
 
-VERSION = '0.3.4'
-
-FULL_DECK_TEMPLATE = os.path.join(os.path.dirname(__file__), 'deck_template.html.jinja2')
-
+VERSION = '0.4.0'
 
 def find_icon(name, parent_dir='.', root='.'):
     try:
@@ -277,6 +275,9 @@ def main():
     if not all(os.path.dirname(path) == source_dir for path in args.definitions):
         # Restrict files to being in the same directory so that the server can have a common root
         parser.error("All yaml files must be in the same directory.")
+
+    for path in args.definitions:
+        Deck(path)
 
     def render_all(force=False):
         outputs = []
