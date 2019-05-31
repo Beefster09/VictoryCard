@@ -1,181 +1,224 @@
+general:
+  icon_path: icons
+
 cards:
-  - attack: 1
-    avatar: alien-stare.png
-    defense: 1
-    health: 4
-    insanity: 9
-    move: 1
-    name: Alien
-    copies: 3
+
+  - name: Alien
+    avatar: alien-stare
+    stats:
+      move: 1
+      health: 4
+      attack: 1
+      defense: 1
+      insanity: 9
     text: |
       Lorem ipsum dolor sit amet, *consectetur* adipiscing elit
-  - attack: 2
-    avatar: barbarian.png
-    defense: 7
-    health: 6
-    insanity: 8
-    move: 2
-    name: Barbarian
-    copies: 1
+    copies: 3
+
+  - name: Barbarian
+    avatar: barbarian
+    stats:
+      move: 2
+      health: 6
+      attack: 2
+      defense: 7
+      insanity: 8
     text: sed do eiusmod tempor **incididunt** ut labore et dolore magna
-  - attack: 8
-    avatar: blindfold.png
-    defense: 9
-    health: 5
-    insanity: 1
-    move: 4
-    name: Blind Man
-    copies: Invalid (assumes 1)
+    copies: 1
+
+  - name: Blind Man
+    avatar: blindfold
+    stats:
+      move: 4
+      health: 5
+      attack: 8
+      defense: 9
+      insanity: 1
     text: aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
       nisi ut aliquip ex
-  - attack: 6
-    avatar: cowled.png
-    defense: 2
-    health: 3
-    insanity: 2
-    move: 2
-    name: Pythia
-    copies: null
+    copies: Invalid (assumes 1)
+
+  - name: Pythia
+    avatar: cowled
+    stats:
+      move: 2
+      health: 3
+      attack: 6
+      defense: 2
+      insanity: 2
     text: |
       ea commodo consequat.
 
       Duis aute irure dolor in reprehenderit in voluptate
       velit esse cillum dolore eu fugiat nulla pariatur. Excepteur
-  - attack: 3
-    avatar: dead-head.png
-    defense: 1
-    health: 6
-    insanity: 6
-    move: 1
-    name: Dead Man
-    text: sint occaecat cupidatat [i:icon-skull]
-  - attack: 5
-    avatar: dwarf-face.png
-    defense: 5
-    health: 5
-    insanity: 9
-    move: 3
-    name: Viking
+    copies: null
+
+  - name: Dead Man
+    avatar: dead-head
+    stats:
+      move: 1
+      health: 6
+      attack: 3
+      defense: 1
+      insanity: 6
+    text: sint occaecat cupidatat [i:insanity]
+
+  - name: Viking
+    avatar: dwarf-face
+    stats:
+      move: 3
+      health: 5
+      attack: 5
+      defense: 5
+      insanity: 9
     text: proident, sunt in culpa qui officia ~~deserunt~~ mollit anim id est laborum
-  - attack: 7
-    avatar: gluttony.png
-    defense: 3
-    health: 6
-    insanity: 1
-    move: 2
-    name: Hungry Blob
+
+  - name: Hungry Blob
+    avatar: gluttony
+    stats:
+      move: 2
+      health: 6
+      attack: 7
+      defense: 3
+      insanity: 1
     text: Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium
       , totam explicabo. Nemo enim ipsam voluptatem voluptas sit
-  - attack: 8
-    avatar: idea.png
-    defense: 6
-    health: 3
-    insanity: 3
-    move: 6
-    name: Smartbot
+
+  - name: Smartbot
+    avatar: idea
+    stats:
+      move: 6
+      health: 3
+      attack: 8
+      defense: 6
+      insanity: 3
     text: aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui
       ratione voluptatem quia dolor sit amet, consectetur, adipisci velit, sed quia
       non
-  - attack: 9
-    avatar: iron-mask.png
-    defense: 4
-    health: 9
-    insanity: 2
-    move: 3
-    name: Masked Man
+
+  - name: Masked Man
+    avatar: iron-mask
+    stats:
+      move: 3
+      health: 9
+      attack: 9
+      defense: 4
+      insanity: 2
     text: ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
       velit esse cillum dolore eu fugiat nulla pariatur. Excepteur
-  - attack: 1
-    avatar: lizardman.png
-    defense: 8
-    health: 8
-    insanity: 1
-    move: 2
-    name: Angry Monster
+
+  - name: Angry Monster
+    avatar: lizardman
+    stats:
+      move: 2
+      health: 8
+      attack: 1
+      defense: 8
+      insanity: 1
     text: sint occaecat cupidatat
-  - attack: 2
-    avatar: ninja-mask.png
-    defense: 5
-    health: 2
-    insanity: 1
-    move: 1
-    name: Ninja
+
+  - name: Ninja
+    avatar: ninja-mask
+    stats:
+      move: 1
+      health: 2
+      attack: 2
+      defense: 5
+      insanity: 1
     text: proident, sunt in culpa qui officia deserunt mollit anim id est laborum
-  - attack: 3
-    avatar: one-eyed.png
-    defense: 7
-    health: 1
-    insanity: 1
-    move: 6
-    name: One-Eye
+
+  - name: One-Eye
+    avatar: one-eyed
+    stats:
+      move: 6
+      health: 1
+      attack: 3
+      defense: 7
+      insanity: 1
     text: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - attack: 6
-    avatar: overlord-helm.png
-    defense: 2
-    health: 3
-    insanity: 3
-    move: 8
-    name: Nazgul
+
+  - name: Nazgul
+    avatar: overlord-helm
+    stats:
+      move: 8
+      health: 3
+      attack: 6
+      defense: 2
+      insanity: 3
     text: sed do eiusmod tempor incididunt ut labore et dolore magna
-  - attack: 5
-    avatar: police-officer-head.png
-    defense: 6
-    health: 7
-    insanity: 2
-    move: 2
-    name: Policeman
+
+  - name: Policeman
+    avatar: police-officer-head
+    stats:
+      move: 2
+      health: 7
+      attack: 5
+      defense: 6
+      insanity: 2
     text: aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
       nisi ut aliquip ex
-  - attack: 7
-    avatar: pumpkin-mask.png
-    defense: 5
-    health: 3
-    insanity: 3
-    move: 1
-    name: Halloween Pumpkin
+
+  - name: Halloween Pumpkin
+    avatar: pumpkin-mask
+    stats:
+      move: 1
+      health: 3
+      attack: 7
+      defense: 5
+      insanity: 3
     text: aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
       nisi ut aliquip ex
-  - attack: 9
-    avatar: silenced.png
-    defense: 9
-    health: 6
-    insanity: 3
-    move: 4
-    name: Silent
+
+  - name: Silent
+    avatar: silenced
+    stats:
+      move: 4
+      health: 6
+      attack: 9
+      defense: 9
+      insanity: 3
     text: ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
       velit esse cillum dolore eu fugiat nulla pariatur. Excepteur
-  - attack: 1
-    avatar: snake-bite.png
-    defense: 8
-    health: 1
-    insanity: 2
-    move: 5
-    name: Snake
+
+  - name: Snake
+    avatar: snake-bite
+    stats:
+      move: 5
+      health: 1
+      attack: 1
+      defense: 8
+      insanity: 2
     text: sint occaecat cupidatat
-  - attack: 2
-    avatar: tear-tracks.png
-    defense: 7
-    health: 2
-    insanity: 1
-    move: 2
-    name: Crying Man
+
+  - name: Crying Man
+    avatar: tear-tracks
+    stats:
+      move: 2
+      health: 2
+      attack: 2
+      defense: 7
+      insanity: 1
     text: proident, sunt in culpa qui officia deserunt mollit anim id est laborum
-  - attack: 7
-    avatar: wolf-head.png
-    defense: 1
-    health: 9
-    insanity: 3
-    move: 3
-    name: Wolf
+
+  - name: Wolf
+    avatar: wolf-head
+    stats:
+      move: 3
+      health: 9
+      attack: 7
+      defense: 1
+      insanity: 3
     text: |
       Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium,
       totam explicabo. Nemo enim ipsam voluptatem voluptas sit
-  - attack: 5
-    avatar: woman-elf-face.png
-    defense: 2
-    health: 8
-    insanity: 2
-    move: 2
-    name: Elf
+
+  - name: Elf
+    avatar: woman-elf-face
+    stats:
+      move: 2
+      health: 8
+      attack: 5
+      defense: 2
+      insanity: 2
+    text: sint occaecat cupidatat [i:bad-icon] &badicon; &health;
     copies: 0
-    text: sint occaecat cupidatat [i:bad-icon] &badicon; &icon-heart;

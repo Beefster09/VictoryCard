@@ -99,7 +99,7 @@ class PyCardExtension(Extension):
                 **self.getConfigs()
             ),
             'entity_icon',
-            100
+            100  # This doesn't work with a lower priority for some reason
         )
         md.inlinePatterns.register(  # {#id.class1.class2}[span text]
             SpanInsertionProcessor(

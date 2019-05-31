@@ -1,26 +1,16 @@
 <div class="card">
     <div class="header">
-        <img class="avatar" src="{{ avatar|icon }}" />
+        <img class="avatar" src="avatars/{{ avatar }}.png" />
         <span class="name">{{name}}</span>
     </div>
     <div class="info">
         <div class="text">{{ text|md_paragraph }}</div>
         <div class="stats">
+            {%- for attribute in ['move', 'health', 'attack', 'defense', 'insanity'] %}
             <div class="iconcell">
-                <img class="icon" src="icon-shield.png"> {{defense}}
+                <img class="icon" src="{{ attribute|icon }}"> {{ stats[attribute] }}
             </div>
-            <div class="iconcell">
-                <img class="icon" src="icon-swords.png"> {{attack}}
-            </div>
-            <div class="iconcell">
-                <img class="icon" src="icon-heart.png"> {{health}}
-            </div>
-            <div class="iconcell">
-                <img class="icon" src="icon-skull.png"> {{insanity}}
-            </div>
-            <div class="iconcell">
-                <img class="icon" src="icon-move.png"> {{move}}
-            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
