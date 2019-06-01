@@ -1,11 +1,13 @@
 # VictoryCard
 Flexible card game prototyping engine
 
-Generate printable cards for prototyping using yaml, html, css.
+Generate printable cards for prototyping using yaml, html, and css.
 
-* Card data stored in yaml
-* Html jinja2 templating
-* CSS for styling
+* Card data is stored in yaml
+* HTML is used for templating (using Jinja2)
+* CSS is used for styling
+
+**Requires Python 3.6+**
 
 _Only tested in Python 3.7_
 
@@ -45,11 +47,19 @@ You can also run `python victorycard.py --help` for a list of options.
 
 ### YAML deck data file
 
-VictoryCard uses YAML to define card data. The top level contains 3 sections:
+VictoryCard uses YAML to define card data. The top level accepts these attributes:
 
 * `general` for general settings about the cards themselves
-    * `deck_template`: a path to the deck template if you would like to override the default
+    * `template`: the card template to use for each card in the deck.
+    By default, the default template is the same as the yaml, but with one of these extensions:
+        * `.html.jinja2`
+        * `.jinja2`
+        * `.hj2`
+        * `.vct`
+    See [Jinja Documentation](http://jinja.pocoo.org/docs/latest/templates/) for details on how to create templates for each card.
     * `stylesheet`: the stylesheet used for the whole deck. Defaults to the same name as the yaml, but with a `css` extension.
+    * `embed_styles`: indicates that styles should be inserted into the `<style>` section of the rendered deck (default true)
+    * `card_spacing`: controls how much space is between each card. This should use css units. (Default: 2pt)
     * `header`: a path to an optional header that gets inserted in the `<head>` of the deck template.
     Defaults to the same as the yaml, but with an `html.header` extension
     * `output`: the path to output the deck to. Defaults to the same as the yaml, but with an `html` extension
@@ -61,10 +71,6 @@ VictoryCard uses YAML to define card data. The top level contains 3 sections:
 * `defaults` allows you to set some defaults for each card
 * `cards` - **[Required]** A yaml list of each card and its attributes. Each field is passed to the jinja2 template and is
 pulled from your defaults section if missing. Some additional fields:
-    * `template`: the card template to use for this specific card. Typically you will only want to set this in the `defaults` section.
-    By default, the default template is the same as the yaml, but with a `html.jinja2` extension.
-    Also note that this template *must* have an `html.jinja2` extension, as it will be added to the field if not present.
-    See [Jinja Documentation](http://jinja.pocoo.org/docs/latest/templates/) for details on how to create templates for each card.
     * `copies`: indicates how many copies of that card will be rendered. Set to 0 to exclude the card from rendering.
     Defaults to 1 unless otherwise specified in the `defaults` section
 
@@ -80,12 +86,13 @@ VictoryCard adds a few extensions to Jinja2:
     * `md_auto`: Resulting text is wrapped in `<p>` tags only if the input string includes newlines
     * `markdown` is an alias for `md_auto` by default.
 * Icon search (`icon`). This will search your `icon_path` for suitable icons.
+* Embed file contents (`embed`) to dump the entire contents of a (text) file into that point.
 
 ### Markdown Exensions
 
 VictoryCard adds a few extensions to Markdown:
 
-* Inline icons, either with a `[icon:whatever]` or `&whatever;` syntax. The latter will not be replaced by placeholder text.
+* Inline icons, either with a `[icon:whatever]` or `&whatever;` syntax. The latter will not be replaced by placeholder text so that it doesn't interfere with HTML entities.
 * `~~` strikethrough
 * Concise spans for things such as game keywords that you may want to style differently. (`{#id.class1.class2}[text]`)
 

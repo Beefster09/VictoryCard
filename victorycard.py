@@ -24,10 +24,6 @@ log = logging.getLogger('victorycard')
 VERSION = '0.4.0'
 
 
-def render_from_yaml(yaml_path, force=False):
-    Deck(yaml_path).render()
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="HTML + CSS card template renderer"
@@ -82,6 +78,7 @@ def main():
             return Deck(deck_file)
         except Exception as err:
             print("Error:", err)
+            return None
 
     decks = [try_Deck(deck_file) for deck_file in args.definitions]
     for deck in decks:
@@ -119,4 +116,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("Interrupted.")
