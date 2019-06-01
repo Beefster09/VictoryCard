@@ -199,6 +199,7 @@ cards:
       defense: 7
       insanity: 1
     text: proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+    copies: 0
 
   - name: Wolf
     avatar: wolf-head
@@ -221,4 +222,3 @@ cards:
       defense: 2
       insanity: 2
     text: sint occaecat cupidatat [i:bad-icon] &badicon; &health;
-    copies: 0

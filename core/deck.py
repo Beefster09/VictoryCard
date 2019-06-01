@@ -1,6 +1,5 @@
 import argparse
 import functools
-import inspect
 import logging
 import os
 import re
@@ -12,6 +11,7 @@ import markdown
 import yaml
 
 from core.extensions import get_jinja2_env
+from core.util import find_working_ext, get_first, transactional
 
 log = logging.getLogger(__name__)
 
@@ -19,97 +19,79 @@ log = logging.getLogger(__name__)
 FULL_DECK_TEMPLATE = os.path.join(os.path.dirname(__file__), 'deck_template.html.jinja2')
 
 
-def get_first(mapping, *attrs, default=None):
-    for key in attrs:
-        if key in mapping:
-            return mapping[key]
-    else:
-        return default
-
-
-class TransactionDelegate:
-    __slots__ = '_delegate_', '_overrides_'
-
-    def __init__(self, delegate):
-        self._delegate_ = delegate
-        self._overrides_ = {}
-
-    def __getattr__(self, attr):
-        if attr in self._overrides_:
-            return self._overrides_[attr]
-        else:
-            value = getattr(self._delegate_, attr)
-            if inspect.ismethod(value):
-                # Avoid leaking the underlying self from the bound method
-                return functools.partial(getattr(type(self._delegate_), attr), self._delegate_)
-            else:
-                return value
-
-    def __setattr__(self, attr, value):
-        if attr in TransactionDelegate.__slots__:
-            super().__setattr__(attr, value)
-        else:
-            self._overrides_[attr] = value
-
-    def commit(self):
-        for attr, value in self._overrides_.items():
-            setattr(self._delegate_, attr, value)
-
-
-def transactional(method):
-    @functools.wraps(method)
-    def _method(self):
-        transaction = TransactionDelegate(self)
-        try:
-            result = method(transaction)
-        except:
-            raise
-        else:
-            transaction.commit()
-            return result
-
-    return _method
-
-
-class SourceFile:
+class _SourceFile:
     def __init__(self, path):
-        self.path = path
-        self._mtime = os.stat(path).st_mtime
-        self.base, self.ext = os.path.splitext(os.path.basename(path))
-        self.dir = os.path.abspath(os.path.dirname(path))
+        self.path = os.path.abspath(path)
+        self.dir, self.name = os.path.split(self.path)
+        self.base, self.ext = os.path.splitext(self.name)
+        self._mtime = os.path.getmtime(self.path)
 
     @property
     def dirty(self):
-        return os.stat(self.path).st_mtime > self._mtime
+        return os.path.getmtime(self.path) > self._mtime
 
     def refresh(self):
-        mtime = os.stat(self.path).st_mtime
+        mtime = os.path.getmtime(self.path)
         is_dirty = mtime > self._mtime
         self._mtime = mtime
         return is_dirty
 
 
+def sanitize_copies(copies, default=1):
+    try:
+        return max(int(copies if copies is not None else default), 0)
+    except ValueError as err:
+        log.warning(f"Invalid value for 'copies': {err.args[0]}")
+        return default
+
+
+class _Card(dict):
+    def __init__(self, id, defaults={}, data={}):
+        self.id = id
+        self.copies = sanitize_copies(data.pop('copies', None), defaults.get('copies'))
+        super().__init__({**defaults, **data})
+
+    @property
+    def skip(self):
+        return self.copies <= 0
+
+
 class Deck:
     def __init__(self, source):
-        self.source = SourceFile(source)
+        self.source = _SourceFile(source)
 
         self._interpret_source()
+        self.dirty = True
 
     @transactional
     def _interpret_source(self):
         self.sub_sources = {}
 
-        source = self.source.path
-
-        with open(source) as yf:
+        with open(self.source.path) as yf:
             deck_info = yaml.safe_load(yf)
 
         general = deck_info.get('general', {})
         base = general.get('name', self.source.base)
-        self._sub_source(
+
+        output_basename = get_first(
+            general,
+            'output', 'destination', 'dest',
+            default=(base + '.html')
+        )
+        self.output = os.path.join(self.source.dir, output_basename)
+
+        for (attr, *aliases), default in [
+            (['icon_path', 'icon_dir', 'icon_root'], '.'),
+            (['card_spacing', 'spacing'], '2pt'),
+            (['embed_styles', 'embed_css'], True),
+            (['markdown', 'md_config', 'md', 'md_conf', 'markdown_config'], {}),
+        ]:
+            setattr(self, attr, get_first(general, attr, *aliases, default=default))
+
+        self._sub_source(  # TODO: support for LESS, Stylus, SCSS, etc...
             general,
             'stylesheet', 'styles', 'css', 'style',
-            default=(base + '.css')
+            default=(base + '.css'),
         )
         self._sub_source(
             general,
@@ -119,42 +101,128 @@ class Deck:
         self._sub_source(
             general,
             'template',
-            default=(base + '.html.header'),
+            default=base,
             required=True,
+            extensions=['.html.jinja2', '.jinja2', '.hj2', '.vct']
         )
-        for (attr, *aliases), default in [
-            (['output', 'destination', 'dest'], base + '.html'),
-            (['icon_path', 'icon_dir', 'icon_root'], '.'),
-            (['card_spacing', 'spacing'], '2pt'),
-        ]:
-            setattr(self, attr, get_first(general, attr, *aliases, default=default))
 
-        defaults = {
-            'copies': 1,
-            **deck_info.get('default', {})
-        }
+        defaults = deck_info.get('default', {})
+        defaults['copies'] = sanitize_copies(defaults.get('copies'), 1)
 
         cards = deck_info['cards']
         if isinstance(cards, dict):
             self.cards = [
-                {**defaults, **card, '_id': key}
+                _Card(key, defaults, card)
                 for key, card in cards.items()
             ]
         else:
             self.cards = [
-                {**defaults, **card, '_id': f"card{index}"}
+                _Card(f"card{index}", defaults, card)
                 for index, card in enumerate(cards, 1)
             ]
         self.card_index = {
-            card['_id']: card
+            card.id: card
             for card in self.cards
         }
 
-    def _sub_source(self, config, attribute, *aliases, default=None, required=False):
-        value = get_first(config, attribute, *aliases)
-        if value:
-            try:
-                self.sub_sources[attribute] = SourceFile(value)
-            except OSError:
+    def _sub_source(self,
+                    config, attribute, *aliases,
+                    default=None,
+                    required=False,
+                    extensions=None):
+        value = get_first(config, attribute, *aliases) or default
+        base = os.path.join(self.source.dir, value)
+        if extensions:
+            path = find_working_ext(base, *extensions)
+            if path is None:
                 if required:
-                    raise
+                    raise ValueError(
+                        f"Cannot find a suitable file for {value!r} "
+                        f"({attribute}, in {self.source.name!r})"
+                    )
+                return
+        else:
+            path = base
+        try:
+            self.sub_sources[attribute] = _SourceFile(path)
+        except OSError:
+            if required:
+                raise ValueError(
+                    f"{attribute} deck source {value!r} is missing for {self.source.name!r}"
+                )
+
+    @property
+    def header(self):
+        return self.sub_sources.get('header')
+
+    @property
+    def stylesheet(self):
+        return self.sub_sources.get('stylesheet')
+
+    @property
+    def template(self):
+        return self.sub_sources['template']
+
+    def render(self):
+        env = get_jinja2_env(
+            root=self.source.dir,
+            md_config=self.markdown,
+            icon_path=self.icon_path
+        )
+        now = datetime.now()
+        template = env.get_template(os.path.relpath(self.template.path, self.source.dir))
+
+        rendered_cards = []
+        for card in self.cards:
+            if card.skip:
+                continue
+
+            rendered = template.render(
+                card,
+                __card_data=card,
+                __time=now
+            )
+            rendered_cards += [rendered] * card.copies
+
+        log.info("Rendered %d total cards", len(rendered_cards))
+
+        if self.header:
+            with open(self.header.path) as f:
+                custom_header = f.read()
+        else:
+            custom_header = None
+
+        with open(FULL_DECK_TEMPLATE) as tf:
+            global_template = env.from_string(tf.read())
+
+        with open(self.output, "w") as of:
+            of.write(
+                global_template.render(
+                    rendered_cards=rendered_cards,
+                    stylesheet=self.stylesheet.path,
+                    custom_header=custom_header,
+                    absolute_to_relative=os.path.relpath(
+                        os.path.dirname(self.output),
+                        self.source.dir
+                    ),
+                    card_spacing=self.card_spacing,
+                    embed_styles=self.embed_styles,
+                )
+            )
+
+    def sync(self):
+        if self.source.refresh():
+            self._interpret_source()
+            self.render()
+        else:
+            dirty = False
+            for dep in self.sub_sources.values():
+                dirty |= dep.refresh()
+            if dirty:
+                self.render()
+
+    def is_dependency(self, path):
+        if path.endswith(self.source.name):
+            return True
+        else:
+            return any(path.endswith(dep.name) for dep in self.sub_sources.values())

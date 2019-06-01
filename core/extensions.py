@@ -1,5 +1,6 @@
 import functools
 import logging
+import os
 import re
 
 import jinja2
@@ -8,21 +9,21 @@ from markdown.extensions import Extension
 from markdown.inlinepatterns import InlineProcessor, SimpleTagInlineProcessor
 from markdown.util import etree
 
+from core.util import find_working_ext
+
 log = logging.getLogger(__name__)
 
 def find_icon(name, parent_dir='.', root='.'):
     try:
-        if os.path.splitext(name)[1]:
+        icon = find_working_ext(
+            os.path.join(root, parent_dir, name),
+            '.svg', '.webp', '.png', '.gif', '.bmp', '.jpeg', '.jpg'
+        )
+        if icon:
             # Extension given explicitly; assume it exists
-            return '/' + os.path.relpath(os.path.join(root, parent_dir, name), root).replace('\\', '/')
+            return '/' + os.path.relpath(icon, root).replace('\\', '/')
         else:
-            # Try to find a working image with that base name
-            for ext in ['.svg', '.webp', '.png', '.gif', '.bmp', '.jpeg', '.jpg']:
-                candidate = os.path.join(root, parent_dir, name + ext)
-                if os.path.isfile(candidate):
-                    return '/' + os.path.relpath(candidate, root).replace('\\', '/')
-            else:
-                return None
+            return None
     except TypeError as e:
         log.warning(f"Icon Finder: {e}")
 
@@ -63,7 +64,7 @@ class SpanInsertionProcessor(InlineProcessor):
         return el, m.start(0), m.end(0)
 
 
-class PyCardExtension(Extension):
+class MarkdownExtensions(Extension):
     def __init__(self, **kwargs):
         self.config = {
             "icon_root"  : ['.', "The root to use for the icon, relative to the cards.yaml"],
@@ -103,23 +104,36 @@ class PyCardExtension(Extension):
         )
 
 
-def get_jinja2_env():
+def read_safe(path):
+    try:
+        with open(path) as f:
+            return f.read()
+    except OSError:
+        log.exception("Could not read %r", path)
+    except TypeError as err:
+        log.error("%s", err)
+    return None
+
+P_TAG = re.compile(r'</?p>')
+
+def get_jinja2_env(root, *, md_config, icon_path):
     # Configure markdown
-    md_extensions = general['markdown'].get('extensions', ['smarty'])
-    md_ext_conf = general['markdown'].get('extension_configs', {})
+    md_extensions = md_config.get('extensions', ['smarty'])
+    md_ext_conf = md_config.get('extension_configs', {})
     md_extensions.append(
-        PyCardExtension(
-            icon_root=general['icon_path'],
-            fs_root=source_dir,
-            **md_ext_conf.get('pycard', {})
+        MarkdownExtensions(
+            icon_root=icon_path,
+            fs_root=root,
+            **md_ext_conf.get('victorycard', {})
         )
     )
 
     # Configure Jinja2
-    loader = jinja2.FileSystemLoader(source_dir)
+    loader = jinja2.FileSystemLoader(root)
     env = jinja2.Environment(loader=loader)
 
-    env.filters['icon'] = functools.partial(find_icon, parent_dir=general['icon_path'], root=source_dir)
+    env.filters['icon'] = functools.partial(find_icon, parent_dir=icon_path, root=root)
+    env.filters['embed'] = read_safe
 
     env.filters['md_paragraph'] = md_paragraph = functools.partial(
         markdown.markdown,
@@ -128,6 +142,6 @@ def get_jinja2_env():
     )
     env.filters['md_inline'] = md_inline = lambda text: P_TAG.sub('', md_paragraph(text))
     env.filters['md_auto'] = lambda text: md_paragraph(text) if '\n' in text else md_inline(text)
-    env.filters['markdown'] = env.filters[f"md_{general['markdown'].get('default_mode', 'auto')}"]
+    env.filters['markdown'] = env.filters[f"md_{md_config.get('default_mode', 'auto')}"]
 
     return env
