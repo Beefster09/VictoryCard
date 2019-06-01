@@ -105,7 +105,7 @@ class Deck:
         self.sub_sources = {}
 
         deck_info, deps = _parse_definitions(self.source.path)
-        self.hierarchy = []
+        self.hierarchy = [_SourceFile(path) for path in deps]
 
         general = deck_info.get('general', {})
         base = general.get('name', self.source.base)
@@ -248,7 +248,7 @@ class Deck:
             )
 
     def sync(self):
-        if self.source.refresh():
+        if self.source.refresh() or any(dep.refresh() for dep in self.hierarchy):
             self._interpret_source()
             self.render()
         else:
@@ -259,7 +259,8 @@ class Deck:
                 self.render()
 
     def is_dependency(self, path):
-        if path.endswith(self.source.name):
-            return True
-        else:
-            return any(path.endswith(dep.name) for dep in self.sub_sources.values())
+        return (
+            path.endswith(self.source.name)
+            or any(path.endswith(dep.name) for dep in self.hierarchy)
+            or any(path.endswith(dep.name) for dep in self.sub_sources.values())
+        )

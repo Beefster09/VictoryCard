@@ -49,6 +49,7 @@ You can also run `python victorycard.py --help` for a list of options.
 
 VictoryCard uses YAML to define card data. The top level accepts these attributes:
 
+* `extends`: allows adding to or overriding data from another deck. Mappings are deep-merged and sequences are concatenated.
 * `general` for general settings about the cards themselves
     * `template`: the card template to use for each card in the deck.
     By default, the default template is the same as the yaml, but with one of these extensions:
@@ -69,7 +70,7 @@ VictoryCard uses YAML to define card data. The top level accepts these attribute
         * `extensions`: A list of extensions to enable. `smarty` is enabled by default in order to get smart quotes, dashes, and ellipses.
         * `extension_configs`: A dictionary defining configurations for those extensions
 * `defaults` allows you to set some defaults for each card
-* `cards` - **[Required]** A yaml list of each card and its attributes. Each field is passed to the jinja2 template and is
+* `cards` - **[Required]** A yaml list or dict of each card and its attributes. Each field is passed to the jinja2 template and is
 pulled from your defaults section if missing. Some additional fields:
     * `copies`: indicates how many copies of that card will be rendered. Set to 0 to exclude the card from rendering.
     Defaults to 1 unless otherwise specified in the `defaults` section
