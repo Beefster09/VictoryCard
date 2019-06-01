@@ -1,28 +1,29 @@
 #!/usr/bin/env python3.7
 
 import argparse
-import functools
+import glob
+import itertools
 import logging
 import os
-import re
 import sys
-import time
-from datetime import datetime
 
-import jinja2
 import livereload
-import markdown
-import yaml
-from markdown.extensions import Extension
-from markdown.inlinepatterns import InlineProcessor, SimpleTagInlineProcessor
-from markdown.util import etree
 
 from core.deck import Deck
 
 log = logging.getLogger('victorycard')
 
-VERSION = '0.4.1'
+VERSION = '0.4.2'
 
+def expand_path(path):
+    abspath = os.path.abspath(path)
+    if '*' in abspath:  # Fill in glob support on windows
+        yield from glob.iglob(abspath)
+    elif os.path.isdir(path):
+        for entry in os.scandir(path):
+            yield entry.path
+    else:
+        yield abspath
 
 def main():
     parser = argparse.ArgumentParser(
@@ -30,8 +31,8 @@ def main():
     )
 
     parser.add_argument(
-        'definitions',
-        type=os.path.abspath,
+        'sources',
+        type=expand_path,
         nargs='+',
         metavar='PATH',
         help="Path(s) to yaml files defining each deck."
@@ -67,11 +68,10 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
-    source_dir = os.path.dirname(args.definitions[0])
+    sources = [*itertools.chain.from_iterable(args.sources)]
+    # TODO? when using directories, maybe it could detect new decks
 
-    if not all(os.path.dirname(path) == source_dir for path in args.definitions):
-        # Restrict files to being in the same directory so that the server can have a common root
-        parser.error("All deck files must be in the same directory.")
+    source_dir = os.path.dirname(sources[0])
 
     def try_Deck(deck_file):
         try:
@@ -80,7 +80,7 @@ def main():
             print("Error:", err)
             return None
 
-    decks = [try_Deck(deck_file) for deck_file in args.definitions]
+    decks = [try_Deck(deck_file) for deck_file in sources]
     for deck in decks:
         if deck is None:
             continue
@@ -94,6 +94,12 @@ def main():
         sys.exit(1)
 
     if args.run_server:
+        if not all(os.path.dirname(path) == source_dir for path in sources):
+            # Restrict files to being in the same directory so that the server can have a common root
+            # TODO: eliminate this restriction somehow
+            print("All deck files must be in the same directory for live server use.")
+            sys.exit(2)
+
         def sync():
             for deck in decks:
                 try:

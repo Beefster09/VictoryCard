@@ -107,13 +107,14 @@ class Deck:
         deck_info, deps = _parse_definitions(self.source.path)
         self.hierarchy = [_SourceFile(path) for path in deps]
 
+        self.title = deck_info.get('title')
+
         general = deck_info.get('general', {})
-        base = general.get('name', self.source.base)
 
         output_basename = get_first(
             general,
             'output', 'destination', 'dest',
-            default=(base + '.html')
+            default=(self.source.base + '.html')
         )
         self.output = os.path.join(self.source.dir, output_basename)
 
@@ -128,17 +129,17 @@ class Deck:
         self._sub_source(  # TODO: support for LESS, Stylus, SCSS, etc...
             general,
             'stylesheet', 'styles', 'css', 'style',
-            default=(base + '.css'),
+            default=(self.source.base + '.css'),
         )
         self._sub_source(
             general,
             'header',
-            default=(base + '.html.header')
+            default=(self.source.base + '.html.header')
         )
         self._sub_source(
             general,
             'template',
-            default=base,
+            default=self.source.base,
             required=True,
             extensions=['.html.jinja2', '.jinja2', '.hj2', '.vct']
         )
@@ -244,6 +245,7 @@ class Deck:
                     ),
                     card_spacing=self.card_spacing,
                     embed_styles=self.embed_styles,
+                    deck_title=self.title,
                 )
             )
 

@@ -49,6 +49,7 @@ You can also run `python victorycard.py --help` for a list of options.
 
 VictoryCard uses YAML to define card data. The top level accepts these attributes:
 
+* `title`: Corresponds to the page title
 * `extends`: allows adding to or overriding data from another deck. Mappings are deep-merged and sequences are concatenated.
 * `general` for general settings about the cards themselves
     * `template`: the card template to use for each card in the deck.

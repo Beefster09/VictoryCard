@@ -2,7 +2,6 @@ general:
   icon_path: icons
 
 cards:
-
   - name: Alien
     avatar: alien-stare
     stats:
