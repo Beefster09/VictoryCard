@@ -9,7 +9,7 @@ import sys
 
 import livereload
 
-from core.deck import Deck
+from core.deck import Deck, DeckError
 
 log = logging.getLogger('victorycard')
 
@@ -21,7 +21,8 @@ def expand_path(path):
         yield from glob.iglob(abspath)
     elif os.path.isdir(path):
         for entry in os.scandir(path):
-            yield entry.path
+            if entry.name.endswith('.yaml'):
+                yield entry.path
     else:
         yield abspath
 
@@ -60,6 +61,12 @@ def main():
         help="Do not start up a server that watches the directory"
     )
 
+    parser.add_argument(
+        '--debug',
+        action='store_true',
+        help="Show traceback information for deck errors."
+    )
+
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -76,9 +83,10 @@ def main():
     def try_Deck(deck_file):
         try:
             return Deck(deck_file)
-        except Exception as err:
+        except DeckError as err:
             print("Error:", err)
-            return None
+        except Exception:
+            log.exception("Unexpected error (this is a bug)")
 
     decks = [try_Deck(deck_file) for deck_file in sources]
     for deck in decks:
@@ -86,8 +94,10 @@ def main():
             continue
         try:
             deck.render()
-        except Exception as err:
+        except DeckError as err:
             print("Error:", err)
+        except Exception:
+            log.exception("Unexpected error (this is a bug)")
 
     if any(deck is None for deck in decks):
         print("Some of the decks had errors. Aborting")
@@ -104,6 +114,8 @@ def main():
             for deck in decks:
                 try:
                     deck.sync()
+                except DeckError as err:
+                    print("Error:", err)
                 except Exception:
                     log.exception("Cannot sync %r", deck.source.path)
 

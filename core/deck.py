@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 FULL_DECK_TEMPLATE = os.path.join(os.path.dirname(__file__), 'deck_template.html.jinja2')
 
 
-class DeckError:
+class DeckError(Exception):
     pass
 
 class CyclicDependency(DeckError):
@@ -69,6 +69,8 @@ class _Card(dict):
 def _parse_definitions(path, *child_paths):
     with open(path) as yf:
         definitions = yaml.safe_load(yf)
+    if not isinstance(definitions, dict):
+        raise DeckError(f"Invalid Deck Definition: {path!r} (file must be a YAML dictionary)")
     if 'extends' in definitions:
         parent_path = os.path.join(os.path.dirname(path), definitions['extends'])
         if os.path.samefile(parent_path, path):
