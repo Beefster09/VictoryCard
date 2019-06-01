@@ -21,7 +21,7 @@ from core.deck import Deck
 
 log = logging.getLogger('victorycard')
 
-VERSION = '0.4.0'
+VERSION = '0.4.1'
 
 
 def main():

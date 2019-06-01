@@ -11,12 +11,22 @@ import markdown
 import yaml
 
 from core.extensions import get_jinja2_env
-from core.util import find_working_ext, get_first, transactional
+from core.util import dict_merge, find_working_ext, get_first, transactional
 
 log = logging.getLogger(__name__)
 
 
 FULL_DECK_TEMPLATE = os.path.join(os.path.dirname(__file__), 'deck_template.html.jinja2')
+
+
+class DeckError:
+    pass
+
+class CyclicDependency(DeckError):
+    pass
+
+class MissingDependency(DeckError):
+    pass
 
 
 class _SourceFile:
@@ -56,19 +66,46 @@ class _Card(dict):
         return self.copies <= 0
 
 
+def _parse_definitions(path, *child_paths):
+    with open(path) as yf:
+        definitions = yaml.safe_load(yf)
+    if 'extends' in definitions:
+        parent_path = os.path.join(os.path.dirname(path), definitions['extends'])
+        if os.path.samefile(parent_path, path):
+            raise CyclicDependency(
+                f"{path!r} wants to extend {parent_path!r}, but they are the same file"
+            )
+        for child_path in child_paths:
+            if os.path.samefile(parent_path, child_path):
+                raise CyclicDependency(
+                    f"{path!r} wants to extend {parent_path!r},"
+                    f" but {parent_path!r} already directly or indirectly extends {path!r}"
+                )
+        try:
+            parent_defs, parent_deps = _parse_definitions(parent_path, path, *child_paths)
+        except FileNotFoundError:
+            raise MissingDependency(parent_path)
+        else:
+            return (
+                dict_merge(parent_defs, definitions, ignore_keys={'extends'}),
+                [parent_path, *parent_deps]
+            )
+    else:
+        return definitions, []
+
+
 class Deck:
     def __init__(self, source):
         self.source = _SourceFile(source)
 
         self._interpret_source()
-        self.dirty = True
 
     @transactional
     def _interpret_source(self):
         self.sub_sources = {}
 
-        with open(self.source.path) as yf:
-            deck_info = yaml.safe_load(yf)
+        deck_info, deps = _parse_definitions(self.source.path)
+        self.hierarchy = []
 
         general = deck_info.get('general', {})
         base = general.get('name', self.source.base)
@@ -136,7 +173,7 @@ class Deck:
             path = find_working_ext(base, *extensions)
             if path is None:
                 if required:
-                    raise ValueError(
+                    raise MissingDependency(
                         f"Cannot find a suitable file for {value!r} "
                         f"({attribute}, in {self.source.name!r})"
                     )
@@ -147,7 +184,7 @@ class Deck:
             self.sub_sources[attribute] = _SourceFile(path)
         except OSError:
             if required:
-                raise ValueError(
+                raise MissingDependency(
                     f"{attribute} deck source {value!r} is missing for {self.source.name!r}"
                 )
 

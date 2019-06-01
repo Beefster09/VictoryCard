@@ -65,3 +65,34 @@ def find_working_ext(base, *extensions):
             return candidate
     else:
         return None
+
+
+def dict_merge(base, overrides, ignore_keys=()):
+    result = {}
+    for key in {*base, *overrides} - {key.split('.', 1)[0] for key in ignore_keys}:
+        if key not in overrides:
+            result[key] = base[key]
+            continue
+        elif key not in base:
+            result[key] = overrides[key]
+            continue
+
+        b_val = base[key]
+        o_val = overrides[key]
+        if isinstance(o_val, type(b_val)):
+            if isinstance(b_val, dict):
+                result[key] = dict_merge(
+                    b_val, o_val,
+                    {
+                        key.split('.', 1)[1]
+                        for key in ignore_keys
+                        if '.' in key
+                    }
+                )
+            elif isinstance(b_val, list):
+                result[key] = [*b_val, *o_val]
+            else:
+                result[key] = o_val
+        else:
+            result[key] = o_val
+    return result
