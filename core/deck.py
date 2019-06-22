@@ -1,9 +1,11 @@
 import argparse
 import functools
 import logging
+import math
 import os
 import re
 import time
+from collections import namedtuple
 from datetime import datetime
 
 import jinja2
@@ -55,15 +57,37 @@ def sanitize_copies(copies, default=1):
         return default
 
 
+def sanitize_version(version, default=(0, 1, 0)):
+    try:
+        if isinstance(version, int):
+            return version, 0, 0
+        elif isinstance(version, float):
+            minor, major = math.modf(version)
+            return int(major), int(format(minor, '.8g')[2:]), 0
+        elif isinstance(version, str):
+            return tuple(int(x) for x in version.split('.'))[:3]
+        else:
+            return default
+    except (ValueError, TypeError):
+        return default
+
+
 class _Card(dict):
     def __init__(self, id, defaults={}, data={}):
         self.id = id
         self.copies = sanitize_copies(data.pop('copies', None), defaults.get('copies'))
+        self.version = sanitize_version(data.pop('version', None), defaults.get('version'))
         super().__init__({**defaults, **data})
+        log.debug('%s', f"{self.id}: v{self.version} x{self.copies}")
+        log.debug('%s', self)
 
-    @property
-    def skip(self):
-        return self.copies <= 0
+    def should_skip(self, patch_from=None):
+        if self.copies <= 0:
+            return True
+        if patch_from:
+            return self.version <= patch_from
+        else:
+            return False
 
 
 def _parse_definitions(path, *child_paths):
@@ -148,6 +172,7 @@ class Deck:
 
         defaults = deck_info.get('default', {})
         defaults['copies'] = sanitize_copies(defaults.get('copies'), 1)
+        defaults['version'] = sanitize_version(defaults.get('version'), (0, 1, 0))
 
         cards = deck_info['cards']
         if isinstance(cards, dict):
@@ -203,7 +228,7 @@ class Deck:
     def template(self):
         return self.sub_sources['template']
 
-    def render(self):
+    def render(self, patch_from=None):
         env = get_jinja2_env(
             root=self.source.dir,
             md_config=self.markdown,
@@ -214,14 +239,14 @@ class Deck:
 
         rendered_cards = []
         for card in self.cards:
-            if card.skip:
+            if card.should_skip(patch_from):
                 continue
 
             rendered = template.render(
                 card,
                 __card_data=card,
                 __time=now
-            )
+            ), card.version
             rendered_cards += [rendered] * card.copies
 
         log.info("Rendered %d total cards", len(rendered_cards))

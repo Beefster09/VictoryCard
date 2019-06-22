@@ -13,7 +13,7 @@ from core.deck import Deck, DeckError
 
 log = logging.getLogger('victorycard')
 
-VERSION = '0.4.2'
+VERSION = 0, 4, 3
 
 def expand_path(path):
     abspath = os.path.abspath(path)
@@ -70,7 +70,7 @@ def main():
     args = parser.parse_args()
 
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG if args.debug else logging.INFO,
         format='%(asctime)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )

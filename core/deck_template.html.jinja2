@@ -44,6 +44,10 @@
                 top: -0.125em;
             }
 
+            .nowrap {
+                white-space: nowrap;
+            }
+
             @media print {
                 div.__card {
                     page-break-inside: avoid;
@@ -54,8 +58,8 @@
         </style>
     </head>
     <body>
-        {%- for card in rendered_cards %}
-        <div class="__card">
+        {%- for card, version in rendered_cards %}
+        <div class="__card" data-version="{{version|join('.')}}">
             {{ card }}
         </div>
         {%- endfor %}

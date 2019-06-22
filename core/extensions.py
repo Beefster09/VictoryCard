@@ -17,7 +17,7 @@ def find_icon(name, parent_dir='.', root='.'):
     try:
         icon = find_working_ext(
             os.path.join(root, parent_dir, name),
-            '.svg', '.webp', '.png', '.gif', '.bmp', '.jpeg', '.jpg'
+            '.svg', '.png', '.gif', '.bmp', '.webp', '.jpeg', '.jpg'
         )
         if icon:
             # Extension given explicitly; assume it exists
@@ -64,6 +64,19 @@ class SpanInsertionProcessor(InlineProcessor):
         return el, m.start(0), m.end(0)
 
 
+class ClassSpanProcessor(InlineProcessor):
+    def __init__(self, pattern, css_class, tag='span'):
+        InlineProcessor.__init__(self, pattern)
+        self.css_class = css_class
+        self.tag = tag
+
+    def handleMatch(self, m, data):
+        el = etree.Element(self.tag)
+        el.attrib['class'] = self.css_class
+        el.text = m.group(2)
+        return el, m.start(0), m.end(0)
+
+
 class MarkdownExtensions(Extension):
     def __init__(self, **kwargs):
         self.config = {
@@ -101,6 +114,11 @@ class MarkdownExtensions(Extension):
             SimpleTagInlineProcessor(r'(~~)(\S|\S.*\S)\1', 'del'),
             'dtilde_del',
             5
+        )
+        md.inlinePatterns.register(
+            ClassSpanProcessor(r'(\(\()(.*?)(\)\))', 'nowrap'),
+            'span_nowrap',
+            50
         )
 
 
